@@ -19,6 +19,11 @@
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
 
       version = "0.1.0-dev";
+
+      # Pins the dependency tree. Stated once, so the provider binary and the
+      # test derivation are built from the same tree — otherwise the gate would
+      # be testing something other than what it ships.
+      vendorHash = "sha256-HM6/k59eDfD7OpH5S3C8j6YN0Q0ina6KuKfrJVWyTB8=";
     in
     {
       packages = forAllSystems (pkgs: rec {
@@ -26,7 +31,7 @@
           pname = "terraform-provider-nivis-tunnel";
           inherit version;
           src = ./.;
-          vendorHash = null;
+          inherit vendorHash;
           subPackages = [ "cmd/terraform-provider-nivis-tunnel" ];
           ldflags = [
             "-s"
@@ -55,17 +60,28 @@
       checks = forAllSystems (pkgs: {
         build = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
-        unit = pkgs.runCommand "go-test" { nativeBuildInputs = [ pkgs.go ]; } ''
-          export HOME=$TMPDIR
-          export GOFLAGS=-mod=mod
-          export GOCACHE=$TMPDIR/go-cache
-          cp -r ${./.} src && chmod -R +w src && cd src
-          go test ./... 2>&1 | tee $out
-        '';
+        # Run through buildGoModule rather than a bare `go test`: the Nix
+        # sandbox has no network, so the tests must be built from the same
+        # vendored tree as the binary. A hand-rolled runCommand would try to
+        # fetch modules and fail.
+        unit = pkgs.buildGoModule {
+          pname = "terraform-provider-nivis-tunnel-tests";
+          inherit version vendorHash;
+          src = ./.;
+          doCheck = true;
+          installPhase = "touch $out";
+        };
 
         fmt = pkgs.runCommand "nixfmt-check" { nativeBuildInputs = [ pkgs.nixfmt-rfc-style ]; } ''
-          nixfmt --check ${./flake.nix} && touch $out
+          nixfmt --check ${./flake.nix} ${./nix/schema-check.nix} && touch $out
         '';
+
+        # What an external tool actually receives over tfplugin6, as opposed to
+        # what the Go code intends. Different claim, and the one that matters.
+        schema = import ./nix/schema-check.nix {
+          inherit pkgs;
+          provider = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+        };
       });
 
       formatter = forAllSystems (pkgs: pkgs.nixfmt-rfc-style);
