@@ -1,0 +1,48 @@
+schema: spec-driven
+store: nivis
+
+context: |
+  terraform-provider-nivis-tunnel is the OpenTofu/Terraform provider that
+  carries the `nixos_activation` resource. nivis resolves providers by
+  filesystem path, so no registry publication is required for the PoC; the repo
+  is named for the registry convention so publishing later needs no rename.
+
+  It is the half of the nivis-tunnel project that makes the image/live-config
+  SPLIT real. Changing a live NixOS configuration must change ONLY this
+  resource: no new image, no new snapshot, no replaced server. That property is
+  the whole reason the project exists.
+
+  The resource's value over a Terraform null_resource is Read. `null_resource`
+  with triggers only knows what it did last time; this resource reads
+  `readlink /run/current-system` over the transport, so a manual nixos-rebuild
+  on the target shows up as drift in `plan`.
+
+  Apply is three steps: `nix copy` the closure, `nix-env --profile
+  /nix/var/nix/profiles/system --set <path>`, then
+  `<path>/bin/switch-to-configuration switch`.
+
+  The closure arrives as a nivis `__build` leaf, already realised by nivis
+  before apply, so the diff is free: "the store path changed" IS the change.
+
+  Transport is ssh, reached through the ProxyCommand that the companion repo
+  nivis-tunnel provides. That seam is deliberate -- it means deploy-rs,
+  nix-copy-closure and plain ssh all work unchanged over the tunnel.
+
+  Tech stack: Go, tfplugin6 (same shape as terraform-provider-hcloudimage).
+  Nix flakes with supported systems enumerated in plain Nix -- no flake-utils.
+  jj (jujutsu) for version control, colocated with git.
+
+  Planning and beans live in the companion repo nivis-tunnel; this repo carries
+  no .beans directory of its own.
+
+rules:
+  proposal:
+    - Name the bean id in nivis-tunnel that this change implements.
+  tasks:
+    - Every task that changes behaviour names the test that proves it.
+
+operations:
+  archive:
+    guidance:
+      - Update the bean in nivis-tunnel with status and openspec-link.
+      - Commit with jj after archiving, authored by Pim Snel, no attribution trailers.
