@@ -119,7 +119,7 @@ pkgs.testers.runNixOSTest {
 
         environment.systemPackages = [
           self.packages.${system}.default
-          tunnel.packages.${system}.tunnel
+          tunnel.packages.${system}.nivis-tunnel
           pkgs.opentofu
           pkgs.openssh
           pkgs.jq
@@ -205,8 +205,7 @@ pkgs.testers.runNixOSTest {
               f'  stream_id      = "${streamID}"\n'
               f'  relay          = "relay:${toString relayPort}"\n'
               '  key_file       = "/root/orchestrator.key"\n'
-              '  tunnel_command = "tunnel"\n'
-              "}\n"
+                "}\n"
               "EOF"
           )
 
