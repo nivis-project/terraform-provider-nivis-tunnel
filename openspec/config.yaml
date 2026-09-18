@@ -1,5 +1,5 @@
 schema: spec-driven
-store: nivis
+store: nivis-tunnel
 
 context: |
   terraform-provider-nivis-tunnel is the OpenTofu/Terraform provider that
