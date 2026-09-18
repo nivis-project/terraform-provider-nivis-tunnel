@@ -77,11 +77,14 @@ jj st && jj describe -m "<subject>" && jj git push
 
 ## OpenSpec lives in a store
 
-This repo declares `store: nivis` in `openspec/config.yaml`, so there is **no
-local `openspec/specs` or `openspec/changes`** — they live in
-`/home/pim/gh.nivis-project/ospecs`. `openspec init` creates those directories
-by default; if `openspec doctor` warns that the store declaration is ignored,
-one of them came back — delete it.
+This repo declares `store: nivis-tunnel` in `openspec/config.yaml`, so there is
+**no local `openspec/specs` or `openspec/changes`**. They live in the
+`nivis-tunnel` root of `/home/pim/gh.nivis-project/nivis-openspec-stores`
+(`git@github.com:nivis-project/nivis-openspec-stores.git`), shared with the
+companion repo **nivis-tunnel** because the two sides share the wire protocol
+and plan together. `openspec init` creates those directories by default; if
+`openspec doctor` warns that the store declaration is ignored, one of them came
+back, so delete it.
 
 Every proposal names the bean id in `nivis-tunnel` that it implements. On
 archive, update that bean with `openspec-link:` and set its status.
